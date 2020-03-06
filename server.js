@@ -4,92 +4,88 @@ var bodyParser = require("body-parser");
 var brewery = require("./Brewery.js");
 const request = require('request');
 
-// //app.use(express.static(__dirname + "/public"));
-// app.get('/', function(req, res) {
-//   //console.log("Hello from server!");
-//   //вот тут уже нужно подгружать инфу о пиварнях
-//   var b = new brewery.Brewery(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1);
-//   console.log(b);
-//   //b.getFullAddress();
-// });
+function getStates(breweries){
+  var states = [];
+  for(var i = 0; i < breweries.length; i++){
+    if (states.includes(breweries[i].state)){
+      continue;
+    }
+    else{
+        states.push(breweries[i].state);
+    }
+  }
+  return states;
+}
+
+function getDict(states, breweries){
+  var dict = [];
+  for(var j = 0; j < states.length; j++){
+    var tempAddrs = [];
+    for(var i = 0; i < breweries.length; i++){
+      if(breweries[i].state == states[j]){
+        tempAddrs.push(breweries[i].getFullAddress());
+      }
+    }
+    dict[states[j]] = tempAddrs;
+  }
+  return dict;
+}
+
+function createStateBlocks(states, dict){
+  var resultString = "";
+  for(var i = 0; i < states.length; i++){
+    resultString += "<div class='form-group'>"
+    resultString += "<h4>"+states[i]+"</h4>";
+    var tempArray = dict[states[i]];
+    for(var j = 0; j < tempArray.length; j++) {
+      resultString += '<h5>'+tempArray[j]+'</h5>';
+    }
+    resultString += "</div>";
+  }
+  return resultString;
+}
+
+function createTable(breweries){
+  var table = '<table class="table table-condensed table-striped table-bordered"><tr><th>Id</th><th>Name</th><th>Full address</th><th>Phone</th><th>Website URL</th></tr>';
+  for(var i = 0; i < breweries.length; i++){
+    if(breweries[i].type == 'micro'){
+      continue;
+    }else{
+      table += '<tr><th>' + breweries[i].id + '</th><th>' + breweries[i].name +'</th><th>' + breweries[i].getFullAddress() + '</th><th>' +
+       breweries[i].phone + '</th><th>' + breweries[i].website_url +'</th>' + '</tr>';
+    }
+
+  }
+  table += "</table>";
+  return table;
+}
+
+function getStyles(){
+  var styles = '<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet">' +
+               '<style>h5 {padding-left: 30px;}</style>';
+  return styles;
+}
 
 app.get("*", function(req, res) {
-  //console.log("Hello from server!");
-  //вот тут уже нужно подгружать инфу о пиварнях
-  //var b = new brewery.Brewery(1,1,1,1,1,1,1,1,1,1,1,1,1,1,1);
-  //b.getFullAddress();
-  //console.log(b);
-  //b.getFullAddress();
-
-  var outputFile;
-
     request('https://api.openbrewerydb.org/breweries', { json: true }, (err, response, body) => {
-      if (err) { return console.log(err); }
+      if (err) { res.send(err); }
       var breweriesJSON = JSON.parse(JSON.stringify(body));
       var breweries = [];
 
       for(var i=0; i < breweriesJSON.length; i++){
-        //breweries[i] = new brewery.Brewery(JSON.parse(JSON.stringify(breweries[i])));
         var jsonObject = JSON.parse(JSON.stringify(breweriesJSON[i]));
         jsonObject.__proto__ = brewery.Brewery.prototype;
         breweries.push(jsonObject);
-        //console.log(jsonObject.getFullAddress());
       };
 
-      var resultString = '<style>h5 {padding-left: 30px;}</style>';
-
-      var states = [];
-      var dict = [];
-
-      // dict["lalala"] = ["1","2","3","4"]
-
-      for(var i = 0; i < breweries.length; i++){
-        if (states.includes(breweries[i].state)){
-          continue;
-        }
-        else{
-            states.push(breweries[i].state);
-        }
-      }
-
-      for(var j = 0; j < states.length; j++){
-        var tempAddrs = [];
-        for(var i = 0; i < breweries.length; i++){
-          if(breweries[i].state == states[j]){
-            tempAddrs.push(breweries[i].getFullAddress());
-          }
-        }
-        dict[states[j]] = tempAddrs;
-      }
-
-      for(var i = 0; i < states.length; i++){
-        resultString += "<h4>"+states[i]+"</h4>";
-        var tempArray = dict[states[i]];
-        for(var j = 0; j < tempArray.length; j++) {
-          resultString += '<h5>'+tempArray[j]+'</h5>';
-        }
-      }
-
-      var table = '<table><tr><th>Id</th><th>Name</th><th>Full address</th><th>Phone</th><th>Website URL</th></tr>';
-
-      for(var i = 0; i < breweries.length; i++){
-        if(breweries[i].type == 'micro'){
-          continue;
-        }else{
-          table += '<tr><th>' + breweries[i].id + '</th><th>' + breweries[i].name +'</th><th>' + breweries[i].getFullAddress() + '</th><th>' +
-           breweries[i].phone + '</th><th>' + breweries[i].website_url +'</th>' + '</tr>';
-        }
-
-      }
-      table += "</table>";
-
-
+      var resultString = getStyles();
+      var states = getStates(breweries);
+      var dict = getDict(states, breweries);
+      resultString += createStateBlocks(states, dict);
+      var table = createTable(breweries);
 
       res.send(resultString + table);
     });
-
-
-  //res.send(b);
 });
 
 app.listen(3000, function(){

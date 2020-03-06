@@ -18,10 +18,6 @@ module.exports.Brewery = class Brewery {
   }
 
   getFullAddress() {
-    return this.postal_code + ":" + this.country + ":" + this.state + ":" + this.city + ":" + this.street;  
-  }
-
-  getBreweries() {
-    console.log("Hello from Breweries!");
+    return this.postal_code + ":" + this.country + ":" + this.state + ":" + this.city + ":" + this.street;
   }
 }
